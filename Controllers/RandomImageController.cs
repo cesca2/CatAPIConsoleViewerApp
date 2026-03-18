@@ -1,4 +1,5 @@
 using System.Data.Common;
+using CatAPIConsoleViewerApp.Enums;
 using Spectre.Console;
 namespace CatAPIConsoleViewerApp.Controllers;
 
@@ -23,7 +24,7 @@ public class RandomImageController : BaseController
         var catimages = results.OfType<CatImage>();
         foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
             {
-            DisplayMessage("Here is your image: " +$"[link={image.Url}]Linked Image[/]" + $"({image.Url})");
+            DisplayMessage("Here is your image: " +$"[link={image.Url}]Linked Image[/]" + $" ({image.Url})");
 
             var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
            
@@ -42,6 +43,7 @@ public class RandomImageController : BaseController
         
         if (string.IsNullOrEmpty(query))
         {
+
             return new CatBreed("Random") { ID = "Random" };
         }
         else if (query != "List") 
@@ -51,7 +53,8 @@ public class RandomImageController : BaseController
         var info = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
         var catbreeds = info.Cast<CatBreed>().ToList();
         
-
+        if (catbreeds.Count>0) 
+        {
         var breedSelection = AnsiConsole.Prompt(
             new SelectionPrompt<CatBreed>()
             .Title("Select a breed:")
@@ -59,9 +62,20 @@ public class RandomImageController : BaseController
             .AddChoices(catbreeds));
         
         DisplayMessage($"Selected {breedSelection.Name}");
+        return breedSelection;
+        }
+
+        else
+        {
+            DisplayMessage("No matching breed found, please try again", "red");
+            var breedSearch = AnsiConsole.Ask<string>("Search for breed containing:");
+            return SelectBreeds(breedSearch);
+
+        }
+        
 
     
-    return breedSelection;
+
     }
 
 }

@@ -1,13 +1,9 @@
-using System;
-using System.IO.Pipelines;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Runtime.InteropServices;
-using Spectre.Console;
 
 namespace CatAPIConsoleViewerApp.Controllers;
 
-public class APIHandler
+public class APIHandler: BaseController
 {
     private readonly HttpClient _httpClient;
     private readonly string? RequestType;
@@ -36,7 +32,7 @@ public class APIHandler
         return imageBytes;
     }
     
-    public async Task<List<CatModel>>? RetrieveAPIInfo(string parameters)
+    public async Task<List<CatModel>> RetrieveAPIInfo(string parameters)
 
         {
 
@@ -61,8 +57,9 @@ public class APIHandler
             return new List<CatModel>();
         }
         else
-            {
-                 return new List<CatModel>();
+            {   
+                DisplayMessage("Could not access API");
+                return new List<CatModel>();
             } 
 
 }}
