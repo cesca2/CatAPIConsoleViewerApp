@@ -17,8 +17,7 @@ public class UserInterface : BaseController
         new FigletText("Cat API image fetcher"));
         DisplayMessage("");
         DisplayMessage("Welcome to this app!", "white");
-        DisplayMessage("");
-        DisplayMessage("Press Any Key to Continue.");
+        DisplayMessage(""); 
         Console.ReadKey();
         while (true)
         {
@@ -58,7 +57,24 @@ public class UserInterface : BaseController
                 _randomController.ViewImage();
                 break;
             case SelectionType.Breed:
-                //_magazinesController.ViewItems();
+                    var breedSelectionChoice = AnsiConsole.Prompt(
+                    new SelectionPrompt<BreedSelectionType>()
+                        .Title("Select from this menu:")
+                        .AddChoices(Enum.GetValues<BreedSelectionType>()));
+
+
+                    switch (breedSelectionChoice)
+                    {
+                        case BreedSelectionType.List:
+                            _randomController.ViewImage("List");
+                            break;
+                        case BreedSelectionType.Search:
+                            var breedSearch = AnsiConsole.Ask<string>("Search for breed containing:");
+                            _randomController.ViewImage(breedSearch);
+                            break;
+
+
+                    }
                 break;
         }
     }

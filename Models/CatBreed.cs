@@ -1,0 +1,1 @@
+public record class CatBreed(string Name): CatModel;

@@ -2,12 +2,15 @@ using System;
 using System.IO.Pipelines;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Runtime.InteropServices;
+using Spectre.Console;
 
 namespace CatAPIConsoleViewerApp.Controllers;
 
 public class APIHandler
 {
     private readonly HttpClient _httpClient;
+    private readonly string? RequestType;
 
     public APIHandler(string url)
     {
@@ -18,7 +21,13 @@ public class APIHandler
 
         _httpClient.BaseAddress = new Uri(url); 
 
-        
+        if (url.Contains("images")){
+            RequestType="Image";
+        }
+        else if (url.Contains("breeds")){
+            RequestType = "Breed";
+        }
+     
     }
 
     public async Task<byte[]> RetrieveImageBytes(CatImage image)
@@ -27,21 +36,33 @@ public class APIHandler
         return imageBytes;
     }
     
-    public async Task<List<CatImage>> RetrieveAPIInfo()
+    public async Task<List<CatModel>>? RetrieveAPIInfo(string parameters)
 
         {
 
-        var parameters = $"?api_key={Consts.CATAPI_KEY}&has_breeds=true";
-
         HttpResponseMessage response = await _httpClient.GetAsync(parameters).ConfigureAwait(false);  
        
-        // if (response.IsSuccessStatusCode)
-        
-        var catimages = await _httpClient.GetFromJsonAsync<List<CatImage>>(parameters);
-        return catimages;
-        
-        
-        
+        if (response.IsSuccessStatusCode)
+        {
+            switch (RequestType)
+                {
+                    case "Image":
+                        List<CatImage>? catimages = await _httpClient.GetFromJsonAsync<List<CatImage>>(parameters);
+                        return  (catimages ?? Enumerable.Empty<CatImage>())
+                        .Cast<CatModel>()
+                        .ToList();
+                    case "Breed":
+                        List<CatBreed>? catbreeds = await _httpClient.GetFromJsonAsync<List<CatBreed>>(parameters);
+                        return  (catbreeds ?? Enumerable.Empty<CatBreed>())
+                        .Cast<CatModel>()
+                        .ToList();
+            }
+            
+            return new List<CatModel>();
+        }
+        else
+            {
+                 return new List<CatModel>();
+            } 
 
-}
-}
+}}

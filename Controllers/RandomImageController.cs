@@ -1,31 +1,68 @@
-using System;
+using System.Data.Common;
 using Spectre.Console;
-
-
 namespace CatAPIConsoleViewerApp.Controllers;
 
-public class RandomImageController : BaseController, IBaseController
+public class RandomImageController : BaseController
 {
 
-    public void ViewImage()
+    public void ViewImage(string BreedChoice = "")
     {
         //config for api 
+
         var url = $"{Consts.CATAPI_ENDPOINT}/v1/images/search";
+        var parameters = $"?api_key={Consts.CATAPI_KEY}";  
+        
+        CatBreed breedSelection = SelectBreeds(BreedChoice);
+       
+        if (breedSelection.ID != "Random"){
+            parameters += $"&breed_ids={breedSelection.ID}";
+        }
 
         APIHandler apiHandler = new APIHandler(url);
-        var catimages = apiHandler.RetrieveAPIInfo().GetAwaiter().GetResult();
-
+        var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var catimages = results.OfType<CatImage>();
         foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
-            {Console.WriteLine(image.Url);
+            {
+            DisplayMessage("Here is your image: " +$"[link={image.Url}]Linked Image[/]" + $"({image.Url})");
 
             var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
            
-            DisplayImage(image.Url+" preview", imageBytes, "Random Cat");
+            DisplayImage($"Linked Image preview", imageBytes, $"{breedSelection.Name} Cat");
         
     
     DisplayMessage("Press Any Key to Continue.");
     Console.ReadKey();
-    }
+    }}
+
+    public CatBreed SelectBreeds(string query = "")
+    {
+        // return breed 
+        var url = $"{Consts.CATAPI_ENDPOINT}/v1/breeds";
+        var parameters = $"?api_key={Consts.CATAPI_KEY}";
+        
+        if (string.IsNullOrEmpty(query))
+        {
+            return new CatBreed("Random") { ID = "Random" };
+        }
+        else if (query != "List") 
+        {url +="/search"; parameters+=$"&q={query}";}
+        
+        APIHandler apiHandler = new APIHandler(url);
+        var info = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var catbreeds = info.Cast<CatBreed>().ToList();
+        
+
+        var breedSelection = AnsiConsole.Prompt(
+            new SelectionPrompt<CatBreed>()
+            .Title("Select a breed:")
+            .UseConverter(m => $"{m.Name}")
+            .AddChoices(catbreeds));
+        
+        DisplayMessage($"Selected {breedSelection.Name}");
+
+    
+    return breedSelection;
     }
 
 }
+
