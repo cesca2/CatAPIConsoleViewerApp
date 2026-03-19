@@ -69,7 +69,9 @@ public class UserInterface : BaseController
                             _randomController.ViewImage("List");
                             break;
                         case BreedSelectionType.Search:
-                            var breedSearch = AnsiConsole.Ask<string>("Search for breed containing:");
+
+                            var breedSearchPrompt = new TextPrompt<string>("Search for breed containing:").Validate(i => Validator.IsValidInputString(i), "Bad string");
+                            var breedSearch = AnsiConsole.Prompt(breedSearchPrompt);
                             _randomController.ViewImage(breedSearch);
                             break;
 

@@ -68,7 +68,8 @@ public class RandomImageController : BaseController
         else
         {
             DisplayMessage("No matching breed found, please try again", "red");
-            var breedSearch = AnsiConsole.Ask<string>("Search for breed containing:");
+            var breedSearchPrompt = new TextPrompt<string>("Search for breed containing:").Validate(i => Validator.IsValidInputString(i), "[red]Invalid input string[/]");
+            var breedSearch = AnsiConsole.Prompt(breedSearchPrompt);
             return SelectBreeds(breedSearch);
 
         }
