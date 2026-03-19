@@ -39,6 +39,9 @@ public class UserInterface : BaseController
                         ViewImage(itemTypeChoice);
 
                     break;
+                case MenuAction.ViewFavourites:
+                    _randomController.ViewFavourites();
+                    break;
                 case MenuAction.Exit:
                     if ( ConfirmAction("exit")) {
                         System.Environment.Exit(1);

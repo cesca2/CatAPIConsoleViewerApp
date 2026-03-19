@@ -1,1 +1,1 @@
-public record class CatBreed(string Name): CatModel;
+public record class CatBreed(string Name): CatModel<string>;

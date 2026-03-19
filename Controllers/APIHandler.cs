@@ -23,6 +23,10 @@ public class APIHandler: BaseController
         else if (url.Contains("breeds")){
             RequestType = "Breed";
         }
+        else if (url.Contains("favourites"))
+        {
+            RequestType = "Favourite";
+        }
      
     }
 
@@ -32,7 +36,7 @@ public class APIHandler: BaseController
         return imageBytes;
     }
     
-    public async Task<List<CatModel>> RetrieveAPIInfo(string parameters)
+    public async Task<List<BaseModel>> RetrieveAPIInfo(string parameters)
 
         {
 
@@ -45,21 +49,26 @@ public class APIHandler: BaseController
                     case "Image":
                         List<CatImage>? catimages = await _httpClient.GetFromJsonAsync<List<CatImage>>(parameters);
                         return  (catimages ?? Enumerable.Empty<CatImage>())
-                        .Cast<CatModel>()
+                        .Cast<BaseModel>()
                         .ToList();
                     case "Breed":
                         List<CatBreed>? catbreeds = await _httpClient.GetFromJsonAsync<List<CatBreed>>(parameters);
                         return  (catbreeds ?? Enumerable.Empty<CatBreed>())
-                        .Cast<CatModel>()
+                        .Cast<BaseModel>()
+                        .ToList();
+                     case "Favourite":
+                        List<CatFavourite>? catfavourites = await _httpClient.GetFromJsonAsync<List<CatFavourite>>(parameters);
+                        return  (catfavourites ?? Enumerable.Empty<CatFavourite>())
+                        .Cast<BaseModel>()
                         .ToList();
             }
             
-            return new List<CatModel>();
+            return new List<BaseModel>();
         }
         else
             {   
                 DisplayMessage("Could not access API");
-                return new List<CatModel>();
+                return new List<BaseModel>();
             } 
 
 }}

@@ -79,5 +79,24 @@ public class RandomImageController : BaseController
 
     }
 
+    public void ViewFavourites()
+    {
+        //config for api 
+
+        var url = $"{Consts.CATAPI_ENDPOINT}/v1/favourites";
+        var parameters = $"?api_key={Consts.CATAPI_KEY}";  
+
+        APIHandler apiHandler = new APIHandler(url);
+        var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var catimages = results.OfType<CatFavourite>();
+        foreach (var image in catimages ?? Enumerable.Empty<CatFavourite>())
+            {
+            DisplayMessage("Here is your favourite: " +$"{image.Image_ID}");
+
+    
+    DisplayMessage("Press Any Key to Continue.");
+    Console.ReadKey();
+    }}
+
 }
 

@@ -1,1 +1,1 @@
-public record class CatImage(string Url): CatModel;
+public record class CatImage(string Url): CatModel<string>;

@@ -1,0 +1,1 @@
+public record class CatFavourite(string Image_ID): CatModel<int>;
