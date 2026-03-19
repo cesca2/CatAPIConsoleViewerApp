@@ -1,16 +1,39 @@
 using System.Data.Common;
+using System.Security.Cryptography.X509Certificates;
 using CatAPIConsoleViewerApp.Enums;
 using Spectre.Console;
 namespace CatAPIConsoleViewerApp.Controllers;
 
 public class RandomImageController : BaseController
 {
+    public void PostFavourite(CatImage Image, string Description)
+    { 
+        var post = new CatFavouritePost(Image.ID, Description);
+        var url = $"{Consts.CATAPI_ENDPOINT}/v1/favourites";
+        var parameters = $"?api_key={Consts.CATAPI_KEY}"; 
+        
+        APIHandler apiHandler = new APIHandler(url);
+        var success = apiHandler.PostAPIInfo(post, parameters).GetAwaiter().GetResult();
 
-    public void ViewImage(string BreedChoice = "")
+    }
+
+    public void AddFavourite(CatImage image)
     {
-        //config for api 
+        if ( OfferAction("Add to favourites?")) {
+            var infoPrompt = new TextPrompt<string>("Enter name for favourite:").Validate(i => Validator.IsValidInputString(i), "Bad string");
+            var info = AnsiConsole.Prompt(infoPrompt);
 
-        var url = $"{Consts.CATAPI_ENDPOINT}/v1/images/search";
+            PostFavourite(image, info);
+            
+    }
+    }
+
+    public void ViewImage(string BreedChoice = "", string IDChoice = "")
+    {
+        
+        //config for api 
+        if (string.IsNullOrEmpty(IDChoice))
+        {var url = $"{Consts.CATAPI_ENDPOINT}/v1/images/search";
         var parameters = $"?api_key={Consts.CATAPI_KEY}";  
         
         CatBreed breedSelection = SelectBreeds(BreedChoice);
@@ -29,11 +52,33 @@ public class RandomImageController : BaseController
             var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
            
             DisplayImage($"Linked Image preview", imageBytes, $"{breedSelection.Name} Cat");
+            AddFavourite(image);
+        
+        }}
+        else
+        {
+            var url = $"{Consts.CATAPI_ENDPOINT}/v1/images/{IDChoice}";
+            var parameters = $"?api_key={Consts.CATAPI_KEY}";  
+
+            APIHandler apiHandler = new APIHandler(url);
+            var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+            var catimages = results.OfType<CatImage>();
+            foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
+                {
+                DisplayMessage("Here is your image: " +$"[link={image.Url}]Linked Image[/]" + $" ({image.Url})");
+
+                var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
+            
+                DisplayImage($"Linked Image preview", imageBytes, $"Cat");
+
+
+        }}
+
         
     
     DisplayMessage("Press Any Key to Continue.");
     Console.ReadKey();
-    }}
+    }
 
     public CatBreed SelectBreeds(string query = "")
     {
@@ -75,8 +120,6 @@ public class RandomImageController : BaseController
         }
         
 
-    
-
     }
 
     public void ViewFavourites()
@@ -88,15 +131,21 @@ public class RandomImageController : BaseController
 
         APIHandler apiHandler = new APIHandler(url);
         var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
-        var catimages = results.OfType<CatFavourite>();
-        foreach (var image in catimages ?? Enumerable.Empty<CatFavourite>())
-            {
-            DisplayMessage("Here is your favourite: " +$"{image.Image_ID}");
+        var cats = results.Cast<CatFavourite>().ToList();
 
-    
+        if (cats.Count>0) 
+        {
+        var catSelection = AnsiConsole.Prompt(
+            new SelectionPrompt<CatFavourite>()
+            .Title("Select a favourite:")
+            .UseConverter(m => $"{m.Sub_ID}")
+            .AddChoices(cats));
+        
+        ViewImage("", catSelection.Image_ID);   
+
+    }
     DisplayMessage("Press Any Key to Continue.");
     Console.ReadKey();
-    }}
-
+    }
 }
 

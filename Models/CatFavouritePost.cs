@@ -1,0 +1,1 @@
+public record class CatFavouritePost(string image_id, string sub_id);

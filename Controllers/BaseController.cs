@@ -24,4 +24,11 @@ public abstract class BaseController
 
         return confirm;
     }
+
+    protected bool OfferAction(string itemName)
+    {
+        var confirm = AnsiConsole.Confirm($"Would you like to {itemName}?");
+
+        return confirm;
+    }
 }
