@@ -124,8 +124,6 @@ public class RandomImageController : BaseController
 
     public void ViewFavourites()
     {
-        //config for api 
-
         var url = $"{Consts.CATAPI_ENDPOINT}/v1/favourites";
         var parameters = $"?api_key={Consts.CATAPI_KEY}";  
 
@@ -138,8 +136,8 @@ public class RandomImageController : BaseController
         var catSelection = AnsiConsole.Prompt(
             new SelectionPrompt<CatFavourite>()
             .Title("Select a favourite:")
-            .UseConverter(m => $"{m.Sub_ID}")
-            .AddChoices(cats));
+            .UseConverter(m => $"{m.Sub_ID, -15} {m.CreationDate}")
+            .AddChoices(cats.OrderByDescending(i=>i.CreationDate)));
         
         ViewImage("", catSelection.Image_ID);   
 
