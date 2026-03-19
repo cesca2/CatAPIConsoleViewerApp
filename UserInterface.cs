@@ -1,4 +1,3 @@
-using System;
 using CatAPIConsoleViewerApp.Enums;
 using CatAPIConsoleViewerApp.Controllers;
 using Spectre.Console;
@@ -9,7 +8,7 @@ namespace CatAPIConsoleViewerApp;
 public class UserInterface : BaseController
 {
 
-    private readonly RandomImageController _randomController = new();
+    private readonly CatsServiceController CatsController = new();
 
     internal void MainMenu()
     {
@@ -26,6 +25,7 @@ public class UserInterface : BaseController
             var actionChoice = AnsiConsole.Prompt(
                 new SelectionPrompt<MenuAction>()
                 .Title("What do you want to do next?")
+                .UseConverter(e => System.Text.RegularExpressions.Regex.Replace(e.ToString(), "([a-z])([A-Z])", "$1 $2"))
                 .AddChoices(Enum.GetValues<MenuAction>()));
 
 
@@ -40,7 +40,7 @@ public class UserInterface : BaseController
 
                     break;
                 case MenuAction.ViewFavourites:
-                    _randomController.ViewFavourites();
+                    CatsController.ViewFavourites();
                     break;
                 case MenuAction.Exit:
                     if ( ConfirmAction("exit")) {
@@ -57,7 +57,7 @@ public class UserInterface : BaseController
         switch (selectionType)
         {
             case SelectionType.Random:
-                _randomController.ViewImage();
+                CatsController.ViewImage();
                 break;
             case SelectionType.Breed:
                     var breedSelectionChoice = AnsiConsole.Prompt(
@@ -69,13 +69,13 @@ public class UserInterface : BaseController
                     switch (breedSelectionChoice)
                     {
                         case BreedSelectionType.List:
-                            _randomController.ViewImage("List");
+                            CatsController.ViewImage("List");
                             break;
                         case BreedSelectionType.Search:
 
                             var breedSearchPrompt = new TextPrompt<string>("Search for breed containing:").Validate(i => Validator.IsValidInputString(i), "Bad string");
                             var breedSearch = AnsiConsole.Prompt(breedSearchPrompt);
-                            _randomController.ViewImage(breedSearch);
+                            CatsController.ViewImage(breedSearch);
                             break;
 
 

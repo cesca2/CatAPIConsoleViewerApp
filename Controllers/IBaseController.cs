@@ -1,5 +1,3 @@
-using System;
-
 namespace CatAPIConsoleViewerApp.Controllers;
 
 public interface IBaseController

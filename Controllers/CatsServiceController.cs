@@ -1,10 +1,7 @@
-using System.Data.Common;
-using System.Security.Cryptography.X509Certificates;
-using CatAPIConsoleViewerApp.Enums;
 using Spectre.Console;
 namespace CatAPIConsoleViewerApp.Controllers;
 
-public class RandomImageController : BaseController
+public class CatsServiceController : BaseController
 {
     public void PostFavourite(CatImage Image, string Description)
     { 
