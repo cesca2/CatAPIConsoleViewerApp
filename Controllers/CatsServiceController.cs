@@ -5,7 +5,7 @@ public class CatsServiceController : BaseController
 {
     public void PostFavourite(CatImage Image, string Description)
     { 
-        var post = new CatFavouritePost(Image.ID, Description);
+        var post = new CatFavouritePost() { image_id= Image.ID, sub_id = Description };
         var url = $"{Consts.CATAPI_ENDPOINT}/v1/favourites";
         var parameters = $"?api_key={Consts.CATAPI_KEY}"; 
         
@@ -14,6 +14,53 @@ public class CatsServiceController : BaseController
 
     }
 
+    public void UpdateViews(CatImage Image, int CurrentViews)
+    { 
+        var Description = "Views";
+        var post = new CatVotePost(CurrentViews) { image_id= Image.ID, sub_id = Description };
+        var url = $"{Consts.CATAPI_ENDPOINT}/v1/votes";
+        var parameters = $"?api_key={Consts.CATAPI_KEY}"; 
+        
+        APIHandler apiHandler = new APIHandler(url);
+        var success = apiHandler.PostAPIInfo(post, parameters).GetAwaiter().GetResult();
+
+    }
+
+    public int GetViews(CatImage Image)
+    { 
+        var url = $"{Consts.CATAPI_ENDPOINT}/v1/votes";
+        var parameters = $"?api_key={Consts.CATAPI_KEY}&sub_id=Views"; 
+        
+        APIHandler apiHandler = new APIHandler(url);
+        var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var viewresults = results.OfType<CatVote>();
+        foreach (var vote in viewresults ?? Enumerable.Empty<CatVote>())
+            {
+                // Console.WriteLine(vote.Image_ID);
+                if (Image.ID==vote.Image_ID)
+                {
+                    return vote.Value;
+                }
+
+        
+            }
+        return 0;
+    }
+
+    public void DisplayImage(string message, CatImage image, byte[] bytes, string description = "")
+    {
+        var img = new CanvasImage(bytes).MaxWidth(80);
+        var header = string.Join(" ", description, message);
+
+        AnsiConsole.Write(new Panel(img)
+            .Header($"{description}, {message}")
+            .Border(BoxBorder.Rounded));
+        var views = GetViews(image)+1; // displaying image now so add 1 to views
+        DisplayMessage($"Views: {views}");
+        UpdateViews(image, views);
+    }
+
+           
     public void AddFavourite(CatImage image)
     {
         if ( OfferAction("Add to favourites?")) {
@@ -48,7 +95,7 @@ public class CatsServiceController : BaseController
 
             var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
            
-            DisplayImage($"Linked Image preview", imageBytes, $"{breedSelection.Name} Cat");
+            DisplayImage($"Linked Image preview", image, imageBytes, $"{breedSelection.Name} Cat");
             AddFavourite(image);
         
         }}
@@ -66,7 +113,7 @@ public class CatsServiceController : BaseController
 
                 var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
             
-                DisplayImage($"Linked Image preview", imageBytes, $"Cat");
+                DisplayImage($"Linked Image preview", image, imageBytes, $"Cat");
 
 
         }}

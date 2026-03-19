@@ -30,6 +30,11 @@ public class APIHandler: BaseController
         {
             RequestType = "Favourite";
         }
+        else if (url.Contains("votes"))
+        {
+            RequestType = "Vote";
+        }
+     
      
     }
 
@@ -39,8 +44,9 @@ public class APIHandler: BaseController
         return imageBytes;
     }
 
-    public async Task<bool> PostAPIInfo(CatFavouritePost model, string parameters)
-    {
+    public async Task<bool> PostAPIInfo(object model, string parameters)
+    {   
+        
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync(parameters, model);
         var jsonString = await response.Content.ReadAsStringAsync();
   
@@ -64,8 +70,8 @@ public class APIHandler: BaseController
         {
 
         HttpResponseMessage response = await _httpClient.GetAsync(parameters).ConfigureAwait(false);
-        var jsonString = await response.Content.ReadAsStringAsync();
-       
+        //var jsonString = await response.Content.ReadAsStringAsync();
+        //Console.WriteLine(jsonString);
         if (response.IsSuccessStatusCode)
         {
             switch (RequestType)
@@ -88,7 +94,13 @@ public class APIHandler: BaseController
                         return  (catfavourites ?? Enumerable.Empty<CatFavourite>())
                         .Cast<BaseModel>()
                         .ToList();
+                     case "Vote":
+                        List<CatVote>? catvotes= await _httpClient.GetFromJsonAsync<List<CatVote>>(parameters);
+                        return  (catvotes ?? Enumerable.Empty<CatVote>())
+                        .Cast<BaseModel>()
+                        .ToList();
             }
+            
             
             return new List<BaseModel>();
         }

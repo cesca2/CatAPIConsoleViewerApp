@@ -1,0 +1,1 @@
+public record class CatVotePost(int value): CatPostModel;
