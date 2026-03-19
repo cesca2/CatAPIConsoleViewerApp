@@ -6,35 +6,15 @@ namespace CatAPIConsoleViewerApp.Controllers;
 public class APIHandler: BaseController
 {
     private readonly HttpClient _httpClient;
-    private readonly string? RequestType;
 
-    public APIHandler(string url)
+    public APIHandler(string url, string key)
     {
         _httpClient = new();
         _httpClient.DefaultRequestHeaders.Accept.Clear();
         _httpClient.DefaultRequestHeaders.Accept.Add(  
         new MediaTypeWithQualityHeaderValue("application/json"));
-
+        _httpClient.DefaultRequestHeaders.Add("x-api-key", key);
         _httpClient.BaseAddress = new Uri(url); 
-
-        if (url.Contains("images/search")){
-            RequestType="ImageSearch";
-        }
-        else if (url.Contains("images")){
-            RequestType="Image";
-        }
-        else if (url.Contains("breeds")){
-            RequestType = "Breed";
-        }
-        else if (url.Contains("favourites"))
-        {
-            RequestType = "Favourite";
-        }
-        else if (url.Contains("votes"))
-        {
-            RequestType = "Vote";
-        }
-     
      
     }
 
@@ -68,6 +48,25 @@ public class APIHandler: BaseController
     public async Task<List<BaseModel>> RetrieveAPIInfo(string parameters)
 
         {
+        var RequestType = "";
+        if (parameters.Contains("images/search")){
+            RequestType="ImageSearch";
+        }
+        else if (parameters.Contains("images")){
+            RequestType="Image";
+        }
+        else if (parameters.Contains("breeds")){
+            RequestType = "Breed";
+        }
+        else if (parameters.Contains("favourites"))
+        {
+            RequestType = "Favourite";
+        }
+        else if (parameters.Contains("votes"))
+        {
+            RequestType = "Vote";
+        }
+     
 
         HttpResponseMessage response = await _httpClient.GetAsync(parameters).ConfigureAwait(false);
         //var jsonString = await response.Content.ReadAsStringAsync();

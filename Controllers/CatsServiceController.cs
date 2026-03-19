@@ -3,14 +3,14 @@ namespace CatAPIConsoleViewerApp.Controllers;
 
 public class CatsServiceController : BaseController
 {
+    private APIHandler apiHandler = new APIHandler(Consts.CATAPI_ENDPOINT, Consts.CATAPI_KEY);
+    
     public void PostFavourite(CatImage Image, string Description)
     { 
         var post = new CatFavouritePost() { image_id= Image.ID, sub_id = Description };
-        var url = $"{Consts.CATAPI_ENDPOINT}/v1/favourites";
-        var parameters = $"?api_key={Consts.CATAPI_KEY}"; 
+        var url = $"favourites";
         
-        APIHandler apiHandler = new APIHandler(url);
-        var success = apiHandler.PostAPIInfo(post, parameters).GetAwaiter().GetResult();
+        var success = apiHandler.PostAPIInfo(post, url).GetAwaiter().GetResult();
 
     }
 
@@ -18,25 +18,20 @@ public class CatsServiceController : BaseController
     { 
         var Description = "Views";
         var post = new CatVotePost(CurrentViews) { image_id= Image.ID, sub_id = Description };
-        var url = $"{Consts.CATAPI_ENDPOINT}/v1/votes";
-        var parameters = $"?api_key={Consts.CATAPI_KEY}"; 
+        var url = $"votes";
         
-        APIHandler apiHandler = new APIHandler(url);
-        var success = apiHandler.PostAPIInfo(post, parameters).GetAwaiter().GetResult();
+        var success = apiHandler.PostAPIInfo(post, url).GetAwaiter().GetResult();
 
     }
 
     public int GetViews(CatImage Image)
     { 
-        var url = $"{Consts.CATAPI_ENDPOINT}/v1/votes";
-        var parameters = $"?api_key={Consts.CATAPI_KEY}&sub_id=Views"; 
+        var url = $"votes";
         
-        APIHandler apiHandler = new APIHandler(url);
-        var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var results = apiHandler.RetrieveAPIInfo(url).GetAwaiter().GetResult();
         var viewresults = results.OfType<CatVote>();
         foreach (var vote in viewresults ?? Enumerable.Empty<CatVote>())
             {
-                // Console.WriteLine(vote.Image_ID);
                 if (Image.ID==vote.Image_ID)
                 {
                     return vote.Value;
@@ -50,7 +45,6 @@ public class CatsServiceController : BaseController
     public void DisplayImage(string message, CatImage image, byte[] bytes, string description = "")
     {
         var img = new CanvasImage(bytes).MaxWidth(80);
-        var header = string.Join(" ", description, message);
 
         AnsiConsole.Write(new Panel(img)
             .Header($"{description}, {message}")
@@ -75,10 +69,9 @@ public class CatsServiceController : BaseController
     public void ViewImage(string BreedChoice = "", string IDChoice = "")
     {
         
-        //config for api 
         if (string.IsNullOrEmpty(IDChoice))
-        {var url = $"{Consts.CATAPI_ENDPOINT}/v1/images/search";
-        var parameters = $"?api_key={Consts.CATAPI_KEY}";  
+        {var url = "images/search";
+        var parameters = "";  
         
         CatBreed breedSelection = SelectBreeds(BreedChoice);
        
@@ -86,8 +79,7 @@ public class CatsServiceController : BaseController
             parameters += $"&breed_ids={breedSelection.ID}";
         }
 
-        APIHandler apiHandler = new APIHandler(url);
-        var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var results = apiHandler.RetrieveAPIInfo(url+parameters).GetAwaiter().GetResult();
         var catimages = results.OfType<CatImage>();
         foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
             {
@@ -101,11 +93,10 @@ public class CatsServiceController : BaseController
         }}
         else
         {
-            var url = $"{Consts.CATAPI_ENDPOINT}/v1/images/{IDChoice}";
+            var url = $"images/{IDChoice}";
             var parameters = $"?api_key={Consts.CATAPI_KEY}";  
 
-            APIHandler apiHandler = new APIHandler(url);
-            var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+            var results = apiHandler.RetrieveAPIInfo(url+parameters).GetAwaiter().GetResult();
             var catimages = results.OfType<CatImage>();
             foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
                 {
@@ -126,9 +117,8 @@ public class CatsServiceController : BaseController
 
     public CatBreed SelectBreeds(string query = "")
     {
-        // return breed 
-        var url = $"{Consts.CATAPI_ENDPOINT}/v1/breeds";
-        var parameters = $"?api_key={Consts.CATAPI_KEY}";
+        var url = "breeds";
+        var parameters = "";
         
         if (string.IsNullOrEmpty(query))
         {
@@ -138,8 +128,7 @@ public class CatsServiceController : BaseController
         else if (query != "List") 
         {url +="/search"; parameters+=$"&q={query}";}
         
-        APIHandler apiHandler = new APIHandler(url);
-        var info = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var info = apiHandler.RetrieveAPIInfo(url+parameters).GetAwaiter().GetResult();
         var catbreeds = info.Cast<CatBreed>().ToList();
         
         if (catbreeds.Count>0) 
@@ -168,11 +157,9 @@ public class CatsServiceController : BaseController
 
     public void ViewFavourites()
     {
-        var url = $"{Consts.CATAPI_ENDPOINT}/v1/favourites";
-        var parameters = $"?api_key={Consts.CATAPI_KEY}";  
+        var url = $"favourites";
 
-        APIHandler apiHandler = new APIHandler(url);
-        var results = apiHandler.RetrieveAPIInfo(parameters).GetAwaiter().GetResult();
+        var results = apiHandler.RetrieveAPIInfo(url).GetAwaiter().GetResult();
         var cats = results.Cast<CatFavourite>().ToList();
 
         if (cats.Count>0) 
