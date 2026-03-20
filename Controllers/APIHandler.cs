@@ -1,3 +1,4 @@
+// make this fully api independent handle API requests and common statuses
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
@@ -11,6 +12,7 @@ public class APIHandler: BaseController
     {
         _httpClient = new();
         _httpClient.DefaultRequestHeaders.Accept.Clear();
+        // move these to some config and define in controller
         _httpClient.DefaultRequestHeaders.Accept.Add(  
         new MediaTypeWithQualityHeaderValue("application/json"));
         _httpClient.DefaultRequestHeaders.Add("x-api-key", key);
@@ -18,13 +20,13 @@ public class APIHandler: BaseController
      
     }
 
-    public async Task<byte[]> RetrieveImageBytes(CatImage image)
+    public async Task<byte[]> RetrieveImageBytes(string url)
     {
-        byte[] imageBytes = await _httpClient.GetByteArrayAsync(image.Url);
+        byte[] imageBytes = await _httpClient.GetByteArrayAsync(url);
         return imageBytes;
     }
 
-    public async Task<bool> PostAPIInfo(object model, string parameters)
+    public async Task<bool> PostAPIInfo<T>(T model, string parameters)
     {   
         
         HttpResponseMessage response = await _httpClient.PostAsJsonAsync(parameters, model);
@@ -32,7 +34,6 @@ public class APIHandler: BaseController
   
         if (response.IsSuccessStatusCode)
         {
-            DisplayMessage("Success");
             return true;
             
         }
@@ -45,68 +46,51 @@ public class APIHandler: BaseController
         }
     }
     
-    public async Task<List<BaseModel>> RetrieveAPIInfo(string parameters)
-
-        {
-        var RequestType = "";
-        if (parameters.Contains("images/search")){
-            RequestType="ImageSearch";
-        }
-        else if (parameters.Contains("images")){
-            RequestType="Image";
-        }
-        else if (parameters.Contains("breeds")){
-            RequestType = "Breed";
-        }
-        else if (parameters.Contains("favourites"))
-        {
-            RequestType = "Favourite";
-        }
-        else if (parameters.Contains("votes"))
-        {
-            RequestType = "Vote";
-        }
-     
-
+    public async Task<List<T>> RetrieveAPIInfo<T>(string parameters)
+{
+        List<T> result;
+        
         HttpResponseMessage response = await _httpClient.GetAsync(parameters).ConfigureAwait(false);
-        //var jsonString = await response.Content.ReadAsStringAsync();
-        //Console.WriteLine(jsonString);
+        var jsonString = await response.Content.ReadAsStringAsync();
+        // Console.WriteLine(jsonString);
         if (response.IsSuccessStatusCode)
         {
-            switch (RequestType)
+            List<T>? result_temp;
+            // try List<T> and <T> could be either dependent on context
+            try{
+                List<T>? callresult = await _httpClient.GetFromJsonAsync<List<T>>(parameters);
+                result_temp=callresult;
+            }
+            catch
+            {
+
+                T? callresult = await _httpClient.GetFromJsonAsync<T>(parameters);
+                
+                if (callresult is T value) 
                 {
-                    case "Image":
-                        CatImage? catimage = await _httpClient.GetFromJsonAsync<CatImage>(parameters);
-                        return  new List<BaseModel>{catimage};
-                    case "ImageSearch":
-                        List<CatImage>? catimages = await _httpClient.GetFromJsonAsync<List<CatImage>>(parameters);
-                        return  (catimages ?? Enumerable.Empty<CatImage>())
-                        .Cast<BaseModel>()
-                        .ToList();
-                    case "Breed":
-                        List<CatBreed>? catbreeds = await _httpClient.GetFromJsonAsync<List<CatBreed>>(parameters);
-                        return  (catbreeds ?? Enumerable.Empty<CatBreed>())
-                        .Cast<BaseModel>()
-                        .ToList();
-                     case "Favourite":
-                        List<CatFavourite>? catfavourites = await _httpClient.GetFromJsonAsync<List<CatFavourite>>(parameters);
-                        return  (catfavourites ?? Enumerable.Empty<CatFavourite>())
-                        .Cast<BaseModel>()
-                        .ToList();
-                     case "Vote":
-                        List<CatVote>? catvotes= await _httpClient.GetFromJsonAsync<List<CatVote>>(parameters);
-                        return  (catvotes ?? Enumerable.Empty<CatVote>())
-                        .Cast<BaseModel>()
-                        .ToList();
+                    result_temp = new List<T> { value}; 
+                }
+                else 
+                { 
+                    result_temp = new List<T>();
+                }
+                
+            }
+            if (result_temp is List<T> list)
+            {
+                result = list; 
+            }
+            else
+            {
+                result = new List<T>();  // capture null case
             }
             
-            
-            return new List<BaseModel>();
+            return result;
         }
         else
             {   
                 DisplayMessage("Could not access API");
-                return new List<BaseModel>();
+                return new List<T>();
             } 
 
 }}

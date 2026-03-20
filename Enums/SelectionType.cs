@@ -3,6 +3,7 @@ namespace CatAPIConsoleViewerApp.Enums;
 public enum SelectionType
 {
     Random,
-    Breed
+    Breed,
+    Favourite
 
 }

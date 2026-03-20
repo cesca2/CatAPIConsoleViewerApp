@@ -1,36 +1,51 @@
-using Spectre.Console;
+// designed for interaction with CATAPI calls generic APIHandler, performs GET, POST, etc 
 namespace CatAPIConsoleViewerApp.Controllers;
 
 public class CatsServiceController : BaseController
 {
     private APIHandler apiHandler = new APIHandler(Consts.CATAPI_ENDPOINT, Consts.CATAPI_KEY);
     
-    public void PostFavourite(CatImage Image, string Description)
+    public async Task<bool> PostFavourite(CatImage Image, string Description)
     { 
         var post = new CatFavouritePost() { image_id= Image.ID, sub_id = Description };
         var url = $"favourites";
         
-        var success = apiHandler.PostAPIInfo(post, url).GetAwaiter().GetResult();
+        var success = await apiHandler.PostAPIInfo(post, url);
+        
+        return success;
+
+    }
+    
+    // to use in UI 
+    public async Task<bool> HandleViews(CatImage Image)
+    {
+        // receive number of views stored in API and add one since it's being viewed now
+        var currentviews = await GetViews(Image)+1;
+        DisplayMessage($"Current views: {currentviews}");
+        var success =  await PostViews(Image,currentviews);
+        return success;
 
     }
 
-    public void UpdateViews(CatImage Image, int CurrentViews)
+    private async Task<bool> PostViews(CatImage Image, int CurrentViews)
     { 
-        var Description = "Views";
+        var Description = Consts.CATAPI_VIEWS_KEYWORD; // should match sub_id used in parameters in GetViews() method
         var post = new CatVotePost(CurrentViews) { image_id= Image.ID, sub_id = Description };
         var url = $"votes";
+        var success = await apiHandler.PostAPIInfo(post, url);
         
-        var success = apiHandler.PostAPIInfo(post, url).GetAwaiter().GetResult();
+        return success;
 
     }
 
-    public int GetViews(CatImage Image)
+    private async Task<int> GetViews(CatImage Image)
     { 
         var url = $"votes";
-        
-        var results = apiHandler.RetrieveAPIInfo(url).GetAwaiter().GetResult();
-        var viewresults = results.OfType<CatVote>();
-        foreach (var vote in viewresults ?? Enumerable.Empty<CatVote>())
+        // unfortunately the API doesn't support image_id query directly in votes
+        var parameters = $"?sub_id={Consts.CATAPI_VIEWS_KEYWORD}"; 
+
+        var results = await apiHandler.RetrieveAPIInfo<CatVote>(url+parameters);
+        foreach (var vote in results ?? Enumerable.Empty<CatVote>())
             {
                 if (Image.ID==vote.Image_ID)
                 {
@@ -42,139 +57,78 @@ public class CatsServiceController : BaseController
         return 0;
     }
 
-    public void DisplayImage(string message, CatImage image, byte[] bytes, string description = "")
+
+    public async Task<List<CatImage>> GetImage(CatBreed BreedChoice, string IDChoice = "")
     {
-        var img = new CanvasImage(bytes).MaxWidth(80);
-
-        AnsiConsole.Write(new Panel(img)
-            .Header($"{description}, {message}")
-            .Border(BoxBorder.Rounded));
-        var views = GetViews(image)+1; // displaying image now so add 1 to views
-        DisplayMessage($"Views: {views}");
-        UpdateViews(image, views);
-    }
-
-           
-    public void AddFavourite(CatImage image)
-    {
-        if ( OfferAction("Add to favourites?")) {
-            var infoPrompt = new TextPrompt<string>("Enter name for favourite:").Validate(i => Validator.IsValidInputString(i), "Bad string");
-            var info = AnsiConsole.Prompt(infoPrompt);
-
-            PostFavourite(image, info);
-            
-    }
-    }
-
-    public void ViewImage(string BreedChoice = "", string IDChoice = "")
-    {
+        
+        List<CatImage> results; 
+        string url;
+        string parameters;
         
         if (string.IsNullOrEmpty(IDChoice))
-        {var url = "images/search";
-        var parameters = "";  
-        
-        CatBreed breedSelection = SelectBreeds(BreedChoice);
-       
-        if (breedSelection.ID != "Random"){
-            parameters += $"&breed_ids={breedSelection.ID}";
-        }
-
-        var results = apiHandler.RetrieveAPIInfo(url+parameters).GetAwaiter().GetResult();
-        var catimages = results.OfType<CatImage>();
-        foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
             {
-            DisplayMessage("Here is your image: " +$"[link={image.Url}]Linked Image[/]" + $" ({image.Url})");
-
-            var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
-           
-            DisplayImage($"Linked Image preview", image, imageBytes, $"{breedSelection.Name} Cat");
-            AddFavourite(image);
+                url = "images/search";
+                parameters = ""; 
+                if (BreedChoice.ID != "Random")
+                {
+                    parameters += $"?breed_ids={BreedChoice.ID}";
+                }
+            }
         
-        }}
         else
         {
-            var url = $"images/{IDChoice}";
-            var parameters = $"?api_key={Consts.CATAPI_KEY}";  
-
-            var results = apiHandler.RetrieveAPIInfo(url+parameters).GetAwaiter().GetResult();
-            var catimages = results.OfType<CatImage>();
-            foreach (var image in catimages ?? Enumerable.Empty<CatImage>())
-                {
-                DisplayMessage("Here is your image: " +$"[link={image.Url}]Linked Image[/]" + $" ({image.Url})");
-
-                var imageBytes = apiHandler.RetrieveImageBytes(image).GetAwaiter().GetResult();
+            url = $"images/{IDChoice}";
+            parameters = ""; 
             
-                DisplayImage($"Linked Image preview", image, imageBytes, $"Cat");
+        }
+   
 
+       results = await apiHandler.RetrieveAPIInfo<CatImage>(url+parameters);
+  
 
-        }}
-
-        
+    return results ?? [];
+    }
     
-    DisplayMessage("Press Any Key to Continue.");
-    Console.ReadKey();
+    public async Task<byte[]> GetImageBytes(CatImage Image)
+    {
+        var url = Image.Url;
+
+        return await apiHandler.RetrieveImageBytes(url);
+
+
     }
 
-    public CatBreed SelectBreeds(string query = "")
+    public async Task<List<CatBreed>> GetBreeds(string query = "")
     {
         var url = "breeds";
         var parameters = "";
+        List<CatBreed> results = new List<CatBreed>();
         
         if (string.IsNullOrEmpty(query))
         {
+            results.Add( new CatBreed("Random") { ID = "Random" });
 
-            return new CatBreed("Random") { ID = "Random" };
+            return results;
         }
         else if (query != "List") 
-        {url +="/search"; parameters+=$"&q={query}";}
-        
-        var info = apiHandler.RetrieveAPIInfo(url+parameters).GetAwaiter().GetResult();
-        var catbreeds = info.Cast<CatBreed>().ToList();
-        
-        if (catbreeds.Count>0) 
         {
-        var breedSelection = AnsiConsole.Prompt(
-            new SelectionPrompt<CatBreed>()
-            .Title("Select a breed:")
-            .UseConverter(m => $"{m.Name}")
-            .AddChoices(catbreeds));
+            url +="/search"; parameters+=$"?q={query}";
+        }
         
-        DisplayMessage($"Selected {breedSelection.Name}");
-        return breedSelection;
-        }
+        var info = await apiHandler.RetrieveAPIInfo<CatBreed>(url+parameters);
 
-        else
-        {
-            DisplayMessage("No matching breed found, please try again", "red");
-            var breedSearchPrompt = new TextPrompt<string>("Search for breed containing:").Validate(i => Validator.IsValidInputString(i), "[red]Invalid input string[/]");
-            var breedSearch = AnsiConsole.Prompt(breedSearchPrompt);
-            return SelectBreeds(breedSearch);
-
-        }
+        return info;
         
 
     }
 
-    public void ViewFavourites()
+    public async Task<List<CatFavourite>> GetFavourites()
     {
         var url = $"favourites";
 
-        var results = apiHandler.RetrieveAPIInfo(url).GetAwaiter().GetResult();
-        var cats = results.Cast<CatFavourite>().ToList();
+        var results = await apiHandler.RetrieveAPIInfo<CatFavourite>(url);
 
-        if (cats.Count>0) 
-        {
-        var catSelection = AnsiConsole.Prompt(
-            new SelectionPrompt<CatFavourite>()
-            .Title("Select a favourite:")
-            .UseConverter(m => $"{m.Sub_ID, -15} {m.CreationDate}")
-            .AddChoices(cats.OrderByDescending(i=>i.CreationDate)));
-        
-        ViewImage("", catSelection.Image_ID);   
-
-    }
-    DisplayMessage("Press Any Key to Continue.");
-    Console.ReadKey();
+    return results;
     }
 }
 

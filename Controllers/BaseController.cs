@@ -17,7 +17,7 @@ public abstract class BaseController
 
     protected bool OfferAction(string itemName)
     {
-        var confirm = AnsiConsole.Confirm($"Would you like to {itemName}?");
+        var confirm = AnsiConsole.Confirm($"Would you like to {itemName}?", false);
 
         return confirm;
     }
