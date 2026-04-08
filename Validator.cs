@@ -1,9 +1,10 @@
 using System.Text.RegularExpressions;
-public class Validator { 
+public class Validator
+{
 
-	public static bool IsValidInputString(string Input)
+    public static bool IsValidInputString(string input)
     {
-    return Regex.IsMatch(Input, @"^[a-zA-Z]+$");
+        return Regex.IsMatch(input, @"^[a-zA-Z]+$");
     }
-    
+
 }

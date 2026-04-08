@@ -1,6 +1,7 @@
 using Spectre.Console;
 
 namespace CatAPIConsoleViewerApp;
+
 public abstract class BaseController
 {
     protected void DisplayMessage(string message, string color = "blue")

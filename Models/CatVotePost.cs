@@ -1,1 +1,1 @@
-public record class CatVotePost(int value): CatPostModel;
+public record class CatVotePost(int Value) : CatPostModel;

@@ -1,5 +1,5 @@
 public abstract record class BaseModel()
 {
-    public abstract object IDValue {get;}
+    public abstract object IDValue { get; }
 
 }

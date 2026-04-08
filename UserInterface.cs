@@ -1,7 +1,7 @@
-using CatAPIConsoleViewerApp.Enums;
 using CatAPIConsoleViewerApp.Controllers;
-using Spectre.Console;
+using CatAPIConsoleViewerApp.Enums;
 using SixLabors.ImageSharp;
+using Spectre.Console;
 using System.Security.Cryptography.X509Certificates;
 
 
@@ -10,14 +10,14 @@ namespace CatAPIConsoleViewerApp;
 public class UserInterface : BaseController
 {
 
-    private readonly CatsServiceController CatsController = new();
+    private readonly CatsServiceController _catsController = new();
 
     internal async Task MainMenu()
     {
         AnsiConsole.Write(
         new FigletText("Cat API image fetcher"));
         DisplayMessage("");
-        DisplayMessage(""); 
+        DisplayMessage("");
         Console.ReadKey();
         while (true)
         {
@@ -37,56 +37,57 @@ public class UserInterface : BaseController
                     new SelectionPrompt<SelectionType>()
                         .Title("Select type of image to fetch:")
                         .AddChoices(Enum.GetValues<SelectionType>()));
-                        await ViewImage(itemTypeChoice);
-                    
+                    await ViewImage(itemTypeChoice);
+
                     DisplayMessage("Press Any Key to Continue");
                     Console.ReadKey();
 
                     break;
-                 
+
                 case MenuAction.Exit:
-                    if ( ConfirmAction("exit")) {
+                    if (ConfirmAction("exit"))
+                    {
                         System.Environment.Exit(1);
-                        }
+                    }
                     break;
 
 
+            }
         }
-    }
     }
     private async Task ViewImage(SelectionType selectionType)
     {
-        List<CatImage> imageChoice = new List<CatImage>(); 
+        List<CatImage> imageChoice = new List<CatImage>();
         bool favouriteOption = true;
         string selectionTypeString = "";
 
         switch (selectionType)
         {
             case SelectionType.Favourite:
-                var favs = await CatsController.GetFavourites();
+                var favs = await _catsController.GetFavourites();
 
                 var catSelection = AnsiConsole.Prompt(
                 new SelectionPrompt<CatFavourite>()
                     .Title("Select an image from your saved favourites:")
-                    .UseConverter(m => $"{m.Sub_ID, -15} {m.CreationDate}")
-                    .AddChoices(favs.OrderByDescending(i=>i.CreationDate)));
-                
+                    .UseConverter(m => $"{m.Sub_ID,-15} {m.CreationDate}")
+                    .AddChoices(favs.OrderByDescending(i => i.CreationDate)));
+
                 Console.WriteLine($"Selected {catSelection.Sub_ID}");
 
-                imageChoice = await CatsController.GetImage(new CatBreed("Random"){ID = "Random"}, catSelection.Image_ID);
+                imageChoice = await _catsController.GetImage(new CatBreed("Random") { ID = "Random" }, catSelection.Image_ID);
                 favouriteOption = false; // can't refavourite a favourite
-                selectionTypeString="Favourite";
+                selectionTypeString = "Favourite";
                 break;
-            
+
 
             case SelectionType.Random:
-                imageChoice = await CatsController.GetImage(new CatBreed("Random"){ID = "Random"});
-                selectionTypeString="Random";
+                imageChoice = await _catsController.GetImage(new CatBreed("Random") { ID = "Random" });
+                selectionTypeString = "Random";
                 break;
 
             case SelectionType.Breed:
 
-                List<CatBreed> breedOptions = new List<CatBreed>(); 
+                List<CatBreed> breedOptions = new List<CatBreed>();
 
                 var breedSelectionChoice = AnsiConsole.Prompt(
                 new SelectionPrompt<BreedSelectionType>()
@@ -97,27 +98,27 @@ public class UserInterface : BaseController
                 switch (breedSelectionChoice)
                 {
                     case BreedSelectionType.List:
-                        breedOptions = await CatsController.GetBreeds("List");
+                        breedOptions = await _catsController.GetBreeds("List");
                         break;
                     case BreedSelectionType.Search:
                         int retries = 0;
                         while (!breedOptions.Any())
                         {
-                            if (retries>0)
+                            if (retries > 0)
                             {
                                 DisplayMessage("No breed matching your query, please try again");
                             }
                             var breedSearchPrompt = new TextPrompt<string>("Search for breed containing:").Validate(i => Validator.IsValidInputString(i), "Bad string");
                             var breedSearch = AnsiConsole.Prompt(breedSearchPrompt);
-                            breedOptions = await CatsController.GetBreeds(breedSearch);
+                            breedOptions = await _catsController.GetBreeds(breedSearch);
                             if (!breedOptions.Any())
                             {
-                                retries +=1;
-                                
+                                retries += 1;
+
                             }
 
                         }
-                        
+
                         break;
 
                 }
@@ -126,32 +127,34 @@ public class UserInterface : BaseController
                     .Title("Select a breed:")
                     .UseConverter(m => $"{m.Name}")
                     .AddChoices(breedOptions));
-    
+
                 DisplayMessage($"Selected {breedSelection.Name}");
-                imageChoice = await CatsController.GetImage(breedSelection);
+                imageChoice = await _catsController.GetImage(breedSelection);
                 selectionTypeString = breedSelection.Name;
-                
-                  
-                    
+
+
+
                 break;
         }
 
         foreach (var image in imageChoice)
+        {
+            DisplayMessage($"Requested image available at: {image.Url}");
+            DisplayImage($"Preview {image.Url}", await _catsController.GetImageBytes(image), $"{selectionTypeString} Cat");
+            var viewSuccess = await _catsController.HandleViews(image);
+            if (!viewSuccess)
             {
-                DisplayMessage($"Requested image available at: {image.Url}");
-                DisplayImage($"Preview {image.Url}", await CatsController.GetImageBytes(image), $"{selectionTypeString} Cat");
-                var viewSuccess = await CatsController.HandleViews(image);
-                if (!viewSuccess)
-                {
-                    DisplayMessage("Warning the views did not update successfully for this image", "red");
-                }
-                if (favouriteOption) { 
-                    bool favourited = await AddFavourite(image);
-                    if ( favourited) {DisplayMessage("Favourited successfully", "green");};
-                }
-
-        
+                DisplayMessage("Warning the views did not update successfully for this image", "red");
             }
+            if (favouriteOption)
+            {
+                bool favourited = await AddFavourite(image);
+                if (favourited) { DisplayMessage("Favourited successfully", "green"); }
+                ;
+            }
+
+
+        }
     }
 
     private void DisplayImage(string message, byte[] bytes, string description = "")
@@ -165,11 +168,12 @@ public class UserInterface : BaseController
 
     private async Task<bool> AddFavourite(CatImage image)
     {
-        if ( OfferAction("Add to favourites?")) {
+        if (OfferAction("Add to favourites?"))
+        {
             var infoPrompt = new TextPrompt<string>("Enter name for favourite:").Validate(i => Validator.IsValidInputString(i), "Bad string");
             var info = AnsiConsole.Prompt(infoPrompt);
 
-            var success = await CatsController.PostFavourite(image, info);
+            var success = await _catsController.PostFavourite(image, info);
 
             return success;
         }
