@@ -3,7 +3,7 @@ using Spectre.Console;
 namespace CatAPIConsoleViewerApp;
 public abstract class BaseController
 {
-    protected void DisplayMessage(string message, string color = "yellow")
+    protected void DisplayMessage(string message, string color = "blue")
     {
         AnsiConsole.MarkupLine($"[{color}]{message}[/]");
     }

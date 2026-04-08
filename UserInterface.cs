@@ -17,7 +17,6 @@ public class UserInterface : BaseController
         AnsiConsole.Write(
         new FigletText("Cat API image fetcher"));
         DisplayMessage("");
-        DisplayMessage("Welcome to this app!", "white");
         DisplayMessage(""); 
         Console.ReadKey();
         while (true)
